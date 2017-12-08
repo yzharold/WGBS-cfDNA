@@ -1,0 +1,81 @@
+#!/bin/bash                                                                                                                                                                       
+#PBS -P FFbigdata                                                                                                                                                                 
+#PBS -N wgbs_align                                                                                                                                                                  
+#PBS -l select=1:ncpus=12:mem=72GB                                                                                                                                                 
+#PBS -l walltime=48:00:00                                                                                                                                                         
+#PBS -M zacchatt@gmail.com
+#PBS -q alloc-op
+
+module load fastqc
+module load cutadapt/1.8.3
+module load python/3.5.1
+pip install multiqc
+module load bismark
+module load bowtie2
+module load samtools
+module load trimgalore
+
+# Specify project directory where fastq files are contained in subdirectories
+DIR=/project/RDS-SMS-FFbigdata-RW/Epigenetics/wgbs/CHA4401_20171205_wgbscfdna-55759704/fastq
+
+# Specify directory of bisulfite converted reference genome
+BISGENOME=/project/RDS-SMS-FFbigdata-RW/local_lib/genomes/hg19/
+
+#############################
+### Fastqc & and trimming ###
+#############################
+
+#fastqc; pre_cut
+cd $DIR
+mkdir precut
+fastqc *fastq.gz -o precut
+# summarize with multiqc
+multiqc ./precut/. -o precut
+
+# trim galore; trim poor quality < Q20
+cd $DIR/
+for i in $(ls *.fastq.gz  | rev | cut -c 17- | rev | uniq)
+do
+	trim_galore --paired --fastqc ${i}_R1_001.fastq.gz ${i}_R2_001.fastq.gz
+done
+
+# multiqc; post_cut
+mkdir postcut
+mv *fastqc* postcut
+multiqc ./postcut/. -o postcut
+
+#########################
+### bismark alignment ###
+#########################
+
+cd $DIR/
+for i in $(ls *val_1.fq.gz | rev | cut -c 16- | rev | uniq)
+do
+bismark --bowtie2 --path_to_bowtie /hpc/packages/minerva-manda/bowtie2/2.1.0/ --bam $BISGENOME -1 ${i}_R1_val_1.fq.gz -2 ${i}_R2_val_1.fq.gz
+done
+
+###########################
+### bismark deduplicate ###
+###########################
+
+FILES=$DIR/*
+  for f in $FILES
+		do
+			if [[ "$f" == *.bam ]]
+			then
+			deduplicate_bismark --bam $f >> $DIR/deduplicate_bismark_output.txt
+		fi
+	done
+
+######################################
+### bismark methylation exctractor ###
+######################################
+
+bismark_methylation_extractor -p --comprehensive --include_overlap --ignore 5 --ignore_r2 5 --ignore_3prime 2 --ignore_3prime_r2 2 --cytosine_report --CX --genome_folder --multicore 4 --gzip $BISGENOME *.sam*
+
+######################
+### bismark report ###
+######################
+cd $DIR/
+bismark2report
+
