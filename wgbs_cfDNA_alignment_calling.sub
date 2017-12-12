@@ -2,7 +2,7 @@
 #PBS -P FFbigdata                                                                                                                                                                 
 #PBS -N wgbs_align                                                                                                                                                                  
 #PBS -l select=1:ncpus=12:mem=72GB                                                                                                                                                 
-#PBS -l walltime=48:00:00                                                                                                                                                         
+#PBS -l walltime=64:00:00                                                                                                                                                         
 #PBS -M zacchatt@gmail.com
 #PBS -q alloc-op
 
@@ -44,14 +44,14 @@ mkdir postcut
 mv *fastqc* postcut
 multiqc ./postcut/. -o postcut
 
-#########################
+########################
 ### bismark alignment ###
 #########################
 
 cd $DIR/
-for i in $(ls *val_1.fq.gz | rev | cut -c 16- | rev | uniq)
+for i in $(ls *val_1.fq.gz | rev | cut -c 20- | rev | uniq)
 do
-bismark --bowtie2 --path_to_bowtie /hpc/packages/minerva-manda/bowtie2/2.1.0/ --bam $BISGENOME -1 ${i}_R1_val_1.fq.gz -2 ${i}_R2_val_1.fq.gz
+bismark --bowtie2 --path_to_bowtie /hpc/packages/minerva-manda/bowtie2/2.1.0/ --bam $BISGENOME -1 ${i}_R1_001_val_1.fq.gz -2 ${i}_R2_001_val_2.fq.gz
 done
 
 ###########################
