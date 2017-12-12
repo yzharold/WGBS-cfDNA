@@ -51,7 +51,7 @@ multiqc ./postcut/. -o postcut
 cd $DIR/
 for i in $(ls *val_1.fq.gz | rev | cut -c 20- | rev | uniq)
 do
-bismark --bowtie2 --path_to_bowtie /hpc/packages/minerva-manda/bowtie2/2.1.0/ --bam $BISGENOME -1 ${i}_R1_001_val_1.fq.gz -2 ${i}_R2_001_val_2.fq.gz
+bismark --bowtie2 --bam $BISGENOME -1 ${i}_R1_001_val_1.fq.gz -2 ${i}_R2_001_val_2.fq.gz
 done
 
 ###########################
